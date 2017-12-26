@@ -31,6 +31,10 @@ https://github.com/rickarddahlstrand/MIDI-to-CNC/blob/master/mid2cnc.py
 # Y: 120
 # Z: 120
 
+# C3 note is MIDI note 48
+# C4 note is MIDI note 60
+# A4 note is MIDI note 69
+# C5 note is MIDI note 72
 
 import sys
 import math
@@ -51,7 +55,9 @@ machines = {
 		'ppu': [ 76.19, 76.19, 1600 ],
 		'prompt': 'Smoothie command shell',
 		'end': '',
-		'resetCommands': []
+		'resetCommands': [],
+		'noterange': [21, 108],  # A0 to C8
+		'higherNotesPriority': True
 	},
 	'monoprice': {
 		'ip': '10.0.0.11',
@@ -60,7 +66,9 @@ machines = {
 		'ppu': [46.50, 46.50, 548.75],
 		'prompt': '',
 		'end': 'M77',
-		'resetCommands': ['M201 X1000 Y1000 Z100', 'M203 X6000 Y6000 Z300']
+		'resetCommands': ['M201 X1000 Y1000 Z100', 'M203 X6000 Y6000 Z300'],
+		'noterange': [21, 108],  # A0 to C8
+		'higherNotesPriority': False
 	}
 }
 
@@ -120,6 +128,8 @@ class NoteToGCode:
 		self.safemin = self.machine['safemin']
 		self.safemax = self.machine['safemax']
 		self.ppu = self.machine['ppu']
+		self.higherNotesPriority = self.machine['higherNotesPriority']
+		self.noterange = self.machine['noterange']
 		self.mach_comm = MachineComm(name)
 		self.x = 0.0
 		self.y = 0.0
@@ -160,9 +170,12 @@ class NoteToGCode:
 	def sendGCode(self, notes):
 		feed_xy = [0, 0]
 		distance_xy = [0, 0]
+		filteredNotes = list(filter(lambda x: self.noterange[0] <= x <= self.noterange[1], notes.values()))
+		sortedNotes = sorted(filteredNotes, reverse=self.higherNotesPriority)
 
 		for i in range(0, min(len(notes.values()), self.num_axes)):
-			note = sorted(notes.values(), reverse=True)[i]
+			note = sortedNotes[i]
+			
 			print('note: {} {}'.format(i, note))
 			freq = pow(2.0, (note - 69) / 12.0) * 440.0
 		
@@ -209,7 +222,7 @@ except (EOFError, KeyboardInterrupt):
     sys.exit()
 
 zmorphMachine = NoteToGCode('zmorph')
-# monopriceMachine = NoteToGCode('monoprice')
+monopriceMachine = NoteToGCode('monoprice')
 
 print("Entering main loop. Press Control-C to exit.")
 
@@ -232,8 +245,8 @@ try:
 
 		if len(active_notes) > 0:
 			zmorphMachine.sendGCode(active_notes)
-				# else:
-					# monopriceMachine.sendGCode(message[1] + 12)		
+			monopriceMachine.sendGCode(active_notes)	
+				
 		time.sleep(microNoteDuration)
 except KeyboardInterrupt:
 	print('')
@@ -244,7 +257,7 @@ finally:
 	del midiin
 	# Close machines
 	zmorphMachine.close() 
-	# monopriceMachine.close()
+	monopriceMachine.close()
 	
 	print("Done")
 
