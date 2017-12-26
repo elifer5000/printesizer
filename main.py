@@ -47,10 +47,11 @@ machines = {
 	'zmorph': {
 		'ip': '10.0.0.10',
 		'safemin': [ 0, 0, 0 ],
-		'safemax': [ 225, 240, 200 ],
+		'safemax': [ 225, 50, 200 ],
 		'ppu': [ 76.19, 76.19, 1600 ],
 		'prompt': 'Smoothie command shell',
-		'end': ''
+		'end': '',
+		'resetCommands': []
 	},
 	'monoprice': {
 		'ip': '10.0.0.11',
@@ -58,7 +59,8 @@ machines = {
 		'safemax': [120, 120, 120],
 		'ppu': [46.50, 46.50, 548.75],
 		'prompt': '',
-		'end': 'M77'
+		'end': 'M77',
+		'resetCommands': ['M201 X1000 Y1000 Z100', 'M203 X6000 Y6000 Z300']
 	}
 }
 
@@ -81,6 +83,8 @@ class MachineComm:
 		self.tn.write('G28\n')
 		self.tn.write('G90\n') #Absolute position
 		self.tn.write('G92 X0 Y0 Z0 E0\n') #Set origin to current position
+		for command in self.machine['resetCommands']:
+			self.tn.write(command + '\n')
 
 	def send(self, x, y, f):
 		line = 'G01 X{} Y{} F{}'.format(x, y, f)
@@ -91,17 +95,18 @@ class MachineComm:
 		self.okcnt += rep.count("ok")
 		if verbose: print("SND " + str(self.linecnt) + ": " + line.strip() + " - " + str(self.okcnt))
 
-		print("Waiting for complete...")
+		# print("Waiting for complete...")
 			
-		while self.okcnt < self.linecnt:
-		    rep = self.tn.read_some()
-		    self.okcnt += rep.count("ok")
-		    if verbose: print(str(self.linecnt) + " - " + str(self.okcnt))
+		# while self.okcnt < self.linecnt:
+		#     rep = self.tn.read_some()
+		#     self.okcnt += rep.count("ok")
+		#     if verbose: print(str(self.linecnt) + " - " + str(self.okcnt))
+		# rep = self.tn.read_some()
 
 	def close(self):
 		print('closing telnet for ' + self.name)
 		if self.machine['end']:
-			print('ending with' + self.machine['end'])
+			print('ending with ' + self.machine['end'])
 			self.tn.write(self.machine['end']+ '\n')
 		self.tn.write("exit\n") # for 
 		# self.tn.read_all()
@@ -215,8 +220,11 @@ try:
 			print("[%s] @%0.6f %r" % (port_name, timer, message))
 			
 			if message[0] & 0xF0 == NOTE_ON:
-				zmorphMachine.sendGCode(message[1])
-				monopriceMachine.sendGCode(message[1])
+
+				if message[1] < 60:
+					zmorphMachine.sendGCode(message[1] - 24)
+				else:
+					monopriceMachine.sendGCode(message[1] + 12)
 		
 		time.sleep(0.01)
 except KeyboardInterrupt:
