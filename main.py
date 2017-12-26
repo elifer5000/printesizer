@@ -177,21 +177,7 @@ class NoteToGCode:
 		combined_feedrate = math.sqrt(feed_xy[0]**2 + feed_xy[1]**2)
 
 		self.mach_comm.send(self.x, self.y, combined_feedrate)
-		# line = 'G01 X{} Y{} F{}'.format(self.x, self.y, combined_feedrate)
-		# print(line)
-		# tn.write(line + '\n')
-		# self.linecnt += 1
-		# rep = tn.read_eager()
-		# # print(rep)
-		# self.okcnt += rep.count("ok")
-		# if verbose: print("SND " + str(self.linecnt) + ": " + line.strip() + " - " + str(self.okcnt))
-
-		# print("Waiting for complete...")
-			
-		# while self.okcnt < self.linecnt:
-		#     rep = tn.read_some()
-		#     self.okcnt += rep.count("ok")
-		#     if verbose: print(str(self.linecnt) + " - " + str(self.okcnt))
+		
 	def close(self):
 		self.mach_comm.close()
 
@@ -202,9 +188,6 @@ def write_raw_sequence(tn, seq):
 
 
 ## parameters
-# ipaddr = '10.0.0.10'
-# ipaddr = '10.0.0.10'
-# port = 23
 verbose = True
 
 # Prompts user for MIDI input port, unless a valid port number or name
@@ -216,18 +199,6 @@ try:
     midiin, port_name = open_midiinput(midiport)
 except (EOFError, KeyboardInterrupt):
     sys.exit()
-
-# tn = telnetlib.Telnet(ipaddr, port)
-# # turn on prompt
-# # write_raw_sequence(tn, telnetlib.IAC + telnetlib.DO + "\x55")
-
-# # read startup prompt
-# tn.read_until("Smoothie command shell")
-
-# print("Homing with G28")
-# tn.write("G28\n")
-# tn.write("G90\n") #Absolute position
-# tn.write("G92 X0 Y0 Z0 E0\n") #Set origin to current position
 
 zmorphMachine = NoteToGCode('zmorph')
 monopriceMachine = NoteToGCode('monoprice')
@@ -258,39 +229,6 @@ finally:
 	# Close machines
 	zmorphMachine.close() 
 	monopriceMachine.close()
-	# tn.write('M77') #for monoprice
-	# tn.write("exit\n") # for 
-	# tn.read_all()
-	# tn.close()
 	
 	print("Done")
-
-
-# while True:
-# 	line = raw_input('-->')
-
-# 	if line == 'quit':
-# 		break
-
-# 	tn.write(line + '\n')
-# 	linecnt += 1
-# 	rep = tn.read_eager()
-# 	print(rep)
-# 	okcnt += rep.count("ok")
-# 	if verbose: print("SND " + str(linecnt) + ": " + line.strip() + " - " + str(okcnt))
-
-# 	print("Waiting for complete...")
-		
-# 	while okcnt < linecnt:
-# 	    rep = tn.read_some()
-# 	    okcnt += rep.count("ok")
-# 	    if verbose: print(str(linecnt) + " - " + str(okcnt))
-	
-
-# print('exiting')		    
-# tn.write("exit\n")
-# tn.read_all()
-# tn.close()
-
-
 
