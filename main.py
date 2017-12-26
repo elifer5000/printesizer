@@ -158,7 +158,6 @@ class NoteToGCode:
 	        exit(2);
 
 	def sendGCode(self, notes):
-		duration = 0.05 # in seconds
 		feed_xy = [0, 0]
 		distance_xy = [0, 0]
 
@@ -168,7 +167,7 @@ class NoteToGCode:
 			freq = pow(2.0, (note - 69) / 12.0) * 440.0
 		
 			feed_xy[i] = ( freq * 60.0 ) / self.ppu[i]
-			distance_xy[i] = ( feed_xy[i] * duration ) / 60.0 
+			distance_xy[i] = ( feed_xy[i] * microNoteDuration ) / 60.0 
 		
 		# Turn around BEFORE crossing the limits of the 
 		# safe working envelope
@@ -197,6 +196,7 @@ def write_raw_sequence(tn, seq):
 
 ## parameters
 verbose = True
+microNoteDuration = 0.05 # in seconds
 
 # Prompts user for MIDI input port, unless a valid port number or name
 # is given as the first argument on the command line.
@@ -234,7 +234,7 @@ try:
 			zmorphMachine.sendGCode(active_notes)
 				# else:
 					# monopriceMachine.sendGCode(message[1] + 12)		
-		time.sleep(0.05)
+		time.sleep(microNoteDuration)
 except KeyboardInterrupt:
 	print('')
 finally:
