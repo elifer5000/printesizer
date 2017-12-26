@@ -94,14 +94,12 @@ class MachineComm:
 		rep = self.tn.read_eager()
 		self.okcnt += rep.count("ok")
 		if verbose: print("SND " + str(self.linecnt) + ": " + line.strip() + " - " + str(self.okcnt))
-
-		# print("Waiting for complete...")
 			
-		# while self.okcnt < self.linecnt:
-		#     rep = self.tn.read_some()
-		#     self.okcnt += rep.count("ok")
-		#     if verbose: print(str(self.linecnt) + " - " + str(self.okcnt))
-		# rep = self.tn.read_some()
+		while self.okcnt < self.linecnt:
+			print("Waiting for complete...")
+			rep = self.tn.read_some()
+			self.okcnt += rep.count("ok")
+			if verbose: print(str(self.linecnt) + " - " + str(self.okcnt))
 
 	def close(self):
 		print('closing telnet for ' + self.name)
@@ -159,14 +157,19 @@ class NoteToGCode:
 	        print "you can do that safely). Aborting."
 	        exit(2);
 
-	def sendGCode(self, nownote):
-		print('note: {}'.format(nownote))
-	
-		distance_xy = [1, 1] #TODO calculate
-		freq = pow(2.0, (nownote-69)/12.0)*440.0
+	def sendGCode(self, notes):
+		duration = 0.05 # in seconds
 		feed_xy = [0, 0]
-		feed_xy[0] = ( freq * 60.0 ) / self.ppu[0]
-		feed_xy[1] = ( freq * 60.0 ) / self.ppu[1]
+		distance_xy = [0, 0]
+
+		for i in range(0, min(len(notes.values()), self.num_axes)):
+			note = sorted(notes.values(), reverse=True)[i]
+			print('note: {} {}'.format(i, note))
+			freq = pow(2.0, (note - 69) / 12.0) * 440.0
+		
+			feed_xy[i] = ( freq * 60.0 ) / self.ppu[i]
+			distance_xy[i] = ( feed_xy[i] * duration ) / 60.0 
+		
 		# Turn around BEFORE crossing the limits of the 
 		# safe working envelope
 		if self.reached_limit( self.x, distance_xy[0], self.x_dir, self.safemin[0], self.safemax[0] ):
@@ -206,9 +209,11 @@ except (EOFError, KeyboardInterrupt):
     sys.exit()
 
 zmorphMachine = NoteToGCode('zmorph')
-monopriceMachine = NoteToGCode('monoprice')
+# monopriceMachine = NoteToGCode('monoprice')
 
 print("Entering main loop. Press Control-C to exit.")
+
+active_notes={}
 try:
 	timer = time.time()
 	while True:
@@ -218,15 +223,18 @@ try:
 			message, deltatime = msg
 			timer += deltatime
 			print("[%s] @%0.6f %r" % (port_name, timer, message))
-			
+			note = message[1]
 			if message[0] & 0xF0 == NOTE_ON:
+				active_notes[note] = note
+			elif message[0] & 0xF0 == NOTE_OFF:
+				if active_notes.has_key(note):
+					active_notes.pop(note)
 
-				if message[1] < 60:
-					zmorphMachine.sendGCode(message[1] - 24)
-				else:
-					monopriceMachine.sendGCode(message[1] + 12)
-		
-		time.sleep(0.01)
+		if len(active_notes) > 0:
+			zmorphMachine.sendGCode(active_notes)
+				# else:
+					# monopriceMachine.sendGCode(message[1] + 12)		
+		time.sleep(0.05)
 except KeyboardInterrupt:
 	print('')
 finally:
@@ -236,7 +244,7 @@ finally:
 	del midiin
 	# Close machines
 	zmorphMachine.close() 
-	monopriceMachine.close()
+	# monopriceMachine.close()
 	
 	print("Done")
 
