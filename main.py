@@ -210,6 +210,14 @@ def write_raw_sequence(tn, seq):
 ## parameters
 verbose = True
 microNoteDuration = 0.05 # in seconds
+# idioteque chords
+idiochords = [
+	{'43': 43, '50': 50, '58': 58, '63': 63},
+	{'51': 51, '58': 58, '62': 62, '67': 67},
+	{'50': 50, '55': 55, '63': 63, '70': 70},
+	{'58': 58, '63': 63, '67': 67, '74': 74}
+]
+idiomode = False
 
 # Prompts user for MIDI input port, unless a valid port number or name
 # is given as the first argument on the command line.
@@ -238,9 +246,21 @@ try:
 			print("[%s] @%0.6f %r" % (port_name, timer, message))
 			note = message[1]
 			if message[0] & 0xF0 == NOTE_ON:
-				active_notes[note] = note
+				if idiomode:
+					if note == 60:
+						active_notes = idiochords[0]
+					if note == 61:
+						active_notes = idiochords[1]	
+					if note == 62:
+						active_notes = idiochords[2]
+					if note == 63:
+						active_notes = idiochords[3]
+				else:	
+					active_notes[note] = note
 			elif message[0] & 0xF0 == NOTE_OFF:
-				if active_notes.has_key(note):
+				if idiomode:
+					active_notes = {}
+				elif active_notes.has_key(note):
 					active_notes.pop(note)
 
 		if len(active_notes) > 0:
