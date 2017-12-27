@@ -57,7 +57,8 @@ machines = {
 		'end': '',
 		'resetCommands': [],
 		'noterange': [21, 108],  # A0 to C8
-		'higherNotesPriority': True
+		'higherNotesPriority': False,
+		'transpose': 12
 	},
 	'monoprice': {
 		'ip': '10.0.0.11',
@@ -68,7 +69,8 @@ machines = {
 		'end': 'M77',
 		'resetCommands': ['M201 X1000 Y1000 Z100', 'M203 X6000 Y6000 Z300'],
 		'noterange': [21, 108],  # A0 to C8
-		'higherNotesPriority': False
+		'higherNotesPriority': True,
+		'transpose': 0
 	}
 }
 
@@ -93,6 +95,9 @@ class MachineComm:
 		self.tn.write('G92 X0 Y0 Z0 E0\n') #Set origin to current position
 		for command in self.machine['resetCommands']:
 			self.tn.write(command + '\n')
+		rep = self.tn.read_eager()
+		time.sleep(1.0)
+		print(self.name + " ready")
 
 	def send(self, x, y, f):
 		line = 'G01 X{} Y{} F{}'.format(x, y, f)
@@ -129,6 +134,10 @@ class NoteToGCode:
 		self.safemax = self.machine['safemax']
 		self.ppu = self.machine['ppu']
 		self.higherNotesPriority = self.machine['higherNotesPriority']
+		self.transpose = self.machine['transpose']
+		if idiomode:
+			self.higherNotesPriority = not self.higherNotesPriority
+		
 		self.noterange = self.machine['noterange']
 		self.mach_comm = MachineComm(name)
 		self.x = 0.0
@@ -175,7 +184,7 @@ class NoteToGCode:
 
 		for i in range(0, min(len(notes.values()), self.num_axes)):
 			note = sortedNotes[i]
-			
+			note += self.transpose
 			print('note: {} {}'.format(i, note))
 			freq = pow(2.0, (note - 69) / 12.0) * 440.0
 		
@@ -217,13 +226,14 @@ idiochords = [
 	{'50': 50, '55': 55, '63': 63, '70': 70},
 	{'58': 58, '63': 63, '67': 67, '74': 74}
 ]
-idiomode = False
+
 
 # Prompts user for MIDI input port, unless a valid port number or name
 # is given as the first argument on the command line.
 # API backend defaults to ALSA on Linux.
 midiport = sys.argv[1] if len(sys.argv) > 1 else None
-
+idiomode = bool(int(sys.argv[2])) if len(sys.argv) > 2 else False
+print("idiomode: " + str(idiomode))
 try:
     midiin, port_name = open_midiinput(midiport)
 except (EOFError, KeyboardInterrupt):
@@ -249,17 +259,25 @@ try:
 				if idiomode:
 					if note == 60:
 						active_notes = idiochords[0]
-					if note == 61:
-						active_notes = idiochords[1]	
 					if note == 62:
+						active_notes = idiochords[1]	
+					if note == 64:
 						active_notes = idiochords[2]
-					if note == 63:
+					if note == 65:
 						active_notes = idiochords[3]
 				else:	
 					active_notes[note] = note
 			elif message[0] & 0xF0 == NOTE_OFF:
 				if idiomode:
-					active_notes = {}
+					if note == 60 and active_notes == idiochords[0]:
+						active_notes = {}
+					if note == 62 and active_notes == idiochords[1]:	
+						active_notes = {}	
+					if note == 64 and active_notes == idiochords[2]:
+						active_notes = {}
+					if note == 65 and active_notes == idiochords[3]:	
+						active_notes = {}
+					
 				elif active_notes.has_key(note):
 					active_notes.pop(note)
 
