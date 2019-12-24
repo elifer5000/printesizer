@@ -135,9 +135,6 @@ class NoteToGCode:
 		self.ppu = self.machine['ppu']
 		self.higherNotesPriority = self.machine['higherNotesPriority']
 		self.transpose = self.machine['transpose']
-		if idiomode:
-			self.higherNotesPriority = not self.higherNotesPriority
-		
 		self.noterange = self.machine['noterange']
 		self.mach_comm = MachineComm(name)
 		self.x = 0.0
@@ -224,8 +221,7 @@ microNoteDuration = 0.05 # in seconds
 # is given as the first argument on the command line.
 # API backend defaults to ALSA on Linux.
 midiport = sys.argv[1] if len(sys.argv) > 1 else None
-idiomode = bool(int(sys.argv[2])) if len(sys.argv) > 2 else False
-print("idiomode: " + str(idiomode))
+
 try:
     midiin, port_name = open_midiinput(midiport)
 except (EOFError, KeyboardInterrupt):
