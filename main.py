@@ -168,9 +168,7 @@ class NoteToGCode:
 	        # 
 	        print "\n*** ERROR ***"
 	        print "The current movement cannot be completed within the safe working envelope of"
-	        print "your machine. Turn on the --verbose option to see which MIDI data caused the"
-	        print "problem and adjust the MIDI file (or your safety limits if you are confident"
-	        print "you can do that safely). Aborting."
+	        print "your machine. Aborting."
 	        exit(2);
 
 	def sendGCode(self, notes):
