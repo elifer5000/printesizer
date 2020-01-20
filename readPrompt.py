@@ -6,11 +6,14 @@ import sys
 import time
 import telnetlib
 
-ip = "x.x.x.x"  # Replace with printer's IP address
+# You can pass the IP as an argument, or just write it here
+ip = sys.argv[1] if len(sys.argv) > 1 else "x.x.x.x"  # Replace with printer's IP address
+
 try:
     tn = telnetlib.Telnet(ip, 23)
     time.sleep(1.0)
     line = tn.read_until("\n") # Read first line
     print(line)
+    tn.close()
 except:
     sys.exit("Telnet failure")
