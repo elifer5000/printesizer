@@ -1,5 +1,5 @@
 # printesizer
-Play music with your 3D printers live!
+Play music with your 3D printers live! See a [video](https://youtu.be/mluO7YGOsOs).
 
 ![Printesizer](/printesizer.png)
 
